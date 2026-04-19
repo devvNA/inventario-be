@@ -1,0 +1,1088 @@
+openapi: 3.0.3
+info:
+  title: Inventario Backend API
+  version: 1.0.0
+  description: |
+    API documentation for the warehouse/store inventory management system.
+    This document covers all functionality including Auth, Inventory (Categories, Products),
+    Management (Warehouses, Merchants, Users, Roles), and Transactions.
+servers:
+  - url: http://localhost:8000/api
+    description: Default local server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Sanctum Token
+
+security:
+  - bearerAuth: []
+
+paths:
+  /register:
+    post:
+      tags:
+        - Auth
+      summary: Register a new user
+      description: Create a new user account. Does not require authentication.
+      security: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - phone
+                - password
+                - password_confirmation
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                phone:
+                  type: string
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                password_confirmation:
+                  type: string
+                  format: password
+                photo:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: User registered successfully
+        "422":
+          description: Validation error
+
+  /login:
+    post:
+      tags:
+        - Auth
+      summary: Session Login
+      description: Authenticate via web session. Does not require token.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Logged in successfully
+        "422":
+          description: Validation error
+
+  /token-login:
+    post:
+      tags:
+        - Auth
+      summary: Token Login
+      description: Returns a Sanctum bearer token.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Token generated successfully
+        "422":
+          description: Validation error
+
+  /logout:
+    post:
+      tags:
+        - Auth
+      summary: Logout
+      description: Invalidate current user session/token.
+      responses:
+        "200":
+          description: Logged out successfully
+        "401":
+          description: Unauthenticated
+
+  /user:
+    get:
+      tags:
+        - Auth
+      summary: Get Current User
+      description: Returns current authenticated user context including roles and merchant data.
+      responses:
+        "200":
+          description: User object
+        "401":
+          description: Unauthenticated
+
+  /users:
+    get:
+      tags:
+        - Users
+      summary: List users
+      description: "Role: manager"
+      responses:
+        "200":
+          description: List of users
+    post:
+      tags:
+        - Users
+      summary: Create user
+      description: "Role: manager"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+                - photo
+                - phone
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                phone:
+                  type: string
+                photo:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Created
+        "422":
+          description: Validation error
+
+  /users/{user}:
+    get:
+      tags:
+        - Users
+      summary: Get user details
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: user
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User details
+        "404":
+          description: Not found
+    put:
+      tags:
+        - Users
+      summary: Update user (PUT/PATCH method)
+      description: "Role: manager. Note: send POST request with '_method=PUT' or use standard multipart PUT."
+      parameters:
+        - in: path
+          name: user
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - photo
+                - phone
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                phone:
+                  type: string
+                photo:
+                  type: string
+                  format: binary
+                _method:
+                  type: string
+                  example: PUT
+      responses:
+        "200":
+          description: Updated
+        "422":
+          description: Validation error
+    delete:
+      tags:
+        - Users
+      summary: Delete user
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: user
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  /users/roles:
+    post:
+      tags:
+        - Users
+      summary: Assign Role
+      description: "Role: manager. Assign a role to a user."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - role_id
+              properties:
+                user_id:
+                  type: integer
+                role_id:
+                  type: integer
+      responses:
+        "200":
+          description: Role assigned
+        "422":
+          description: Validation error
+
+  /roles:
+    get:
+      tags:
+        - Roles
+      summary: List roles
+      description: "Role: manager"
+      responses:
+        "200":
+          description: List of roles
+    post:
+      tags:
+        - Roles
+      summary: Create role
+      description: "Role: manager"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+      responses:
+        "201":
+          description: Created
+
+  /roles/{role}:
+    get:
+      tags:
+        - Roles
+      summary: Get role
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: role
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Role details
+    put:
+      tags:
+        - Roles
+      summary: Update role
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: role
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+      responses:
+        "200":
+          description: Updated
+    delete:
+      tags:
+        - Roles
+      summary: Delete role
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: role
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  /categories:
+    get:
+      tags:
+        - Categories
+      summary: List categories
+      description: "Role: manager|keeper"
+      responses:
+        "200":
+          description: List of categories
+    post:
+      tags:
+        - Categories
+      summary: Create category
+      description: "Role: manager"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - tagline
+                - photo
+              properties:
+                name:
+                  type: string
+                tagline:
+                  type: string
+                photo:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Created
+        "422":
+          description: Validation error
+
+  /categories/{category}:
+    get:
+      tags:
+        - Categories
+      summary: Get category
+      description: "Role: manager|keeper"
+      parameters:
+        - in: path
+          name: category
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Category detail
+    put:
+      tags:
+        - Categories
+      summary: Update category
+      description: "Role: manager. Note: For files, send a POST with _method=PUT"
+      parameters:
+        - in: path
+          name: category
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - tagline
+                - photo
+              properties:
+                name:
+                  type: string
+                tagline:
+                  type: string
+                photo:
+                  type: string
+                  format: binary
+                _method:
+                  type: string
+                  example: PUT
+      responses:
+        "200":
+          description: Updated
+    delete:
+      tags:
+        - Categories
+      summary: Delete category
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: category
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  /products:
+    get:
+      tags:
+        - Products
+      summary: List products
+      description: "Role: manager|keeper"
+      responses:
+        "200":
+          description: List of products
+    post:
+      tags:
+        - Products
+      summary: Create product
+      description: "Role: manager"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - thumbnail
+                - about
+                - price
+                - category_id
+              properties:
+                name:
+                  type: string
+                thumbnail:
+                  type: string
+                  format: binary
+                about:
+                  type: string
+                price:
+                  type: integer
+                category_id:
+                  type: integer
+                is_popular:
+                  type: boolean
+                  default: false
+      responses:
+        "201":
+          description: Created
+        "422":
+          description: Validation error
+
+  /products/{product}:
+    get:
+      tags:
+        - Products
+      summary: Get product
+      description: "Role: manager|keeper"
+      parameters:
+        - in: path
+          name: product
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Product
+    put:
+      tags:
+        - Products
+      summary: Update product
+      description: "Role: manager. Note: send via POST with _method=PUT for multipart requests"
+      parameters:
+        - in: path
+          name: product
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - thumbnail
+                - about
+                - price
+                - category_id
+              properties:
+                name:
+                  type: string
+                thumbnail:
+                  type: string
+                  format: binary
+                about:
+                  type: string
+                price:
+                  type: integer
+                category_id:
+                  type: integer
+                is_popular:
+                  type: boolean
+                _method:
+                  type: string
+                  example: PUT
+      responses:
+        "200":
+          description: Updated
+    delete:
+      tags:
+        - Products
+      summary: Delete product
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: product
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  /warehouses:
+    get:
+      tags:
+        - Warehouses
+      summary: List warehouses
+      description: "Role: manager|keeper"
+      responses:
+        "200":
+          description: List of warehouses
+    post:
+      tags:
+        - Warehouses
+      summary: Create warehouse
+      description: "Role: manager"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - address
+                - photo
+                - phone
+              properties:
+                name:
+                  type: string
+                address:
+                  type: string
+                photo:
+                  type: string
+                  format: binary
+                phone:
+                  type: string
+      responses:
+        "201":
+          description: Created
+        "422":
+          description: Validation
+
+  /warehouses/{warehouse}:
+    get:
+      tags:
+        - Warehouses
+      summary: Get warehouse
+      description: "Role: manager|keeper"
+      parameters:
+        - in: path
+          name: warehouse
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detail
+    put:
+      tags:
+        - Warehouses
+      summary: Update warehouse
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: warehouse
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - address
+                - photo
+                - phone
+              properties:
+                name:
+                  type: string
+                address:
+                  type: string
+                photo:
+                  type: string
+                  format: binary
+                phone:
+                  type: string
+                _method:
+                  type: string
+                  example: PUT
+      responses:
+        "200":
+          description: Updated
+    delete:
+      tags:
+        - Warehouses
+      summary: Delete warehouse
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: warehouse
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  /merchants:
+    get:
+      tags:
+        - Merchants
+      summary: List merchants
+      description: "Role: manager"
+      responses:
+        "200":
+          description: OK
+    post:
+      tags:
+        - Merchants
+      summary: Create merchant
+      description: "Role: manager"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - address
+                - photo
+                - phone
+                - keeper_id
+              properties:
+                name:
+                  type: string
+                address:
+                  type: string
+                photo:
+                  type: string
+                  format: binary
+                phone:
+                  type: string
+                keeper_id:
+                  type: integer
+      responses:
+        "201":
+          description: Created
+        "422":
+          description: Validation
+
+  /merchants/{merchant}:
+    get:
+      tags:
+        - Merchants
+      summary: Get merchant
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: merchant
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+    put:
+      tags:
+        - Merchants
+      summary: Update merchant
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: merchant
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - address
+                - photo
+                - phone
+                - keeper_id
+              properties:
+                name:
+                  type: string
+                address:
+                  type: string
+                photo:
+                  type: string
+                  format: binary
+                phone:
+                  type: string
+                keeper_id:
+                  type: integer
+                _method:
+                  type: string
+                  example: PUT
+      responses:
+        "200":
+          description: Updated
+    delete:
+      tags:
+        - Merchants
+      summary: Delete merchant
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: merchant
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  /my-merchant:
+    get:
+      tags:
+        - Merchants
+      summary: My merchant profile
+      description: "Role: manager|keeper"
+      responses:
+        "200":
+          description: Profile
+        "403":
+          description: No merchant assigned
+
+  /my-merchant/transactions:
+    get:
+      tags:
+        - Transactions
+      summary: My merchant transactions
+      description: "Role: manager|keeper"
+      responses:
+        "200":
+          description: List of transactions
+        "403":
+          description: Forbidden / no merchant
+
+  /warehouses/{warehouse}/products:
+    post:
+      tags:
+        - Warehouse Products
+      summary: Attach product to warehouse
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: warehouse
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product_id
+                - stock
+              properties:
+                product_id:
+                  type: integer
+                stock:
+                  type: integer
+                  minimum: 1
+      responses:
+        "200":
+          description: Attached
+
+  /warehouses/{warehouse}/products/{product}:
+    put:
+      tags:
+        - Warehouse Products
+      summary: Update warehouse product stock
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: warehouse
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: product
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - stock
+              properties:
+                stock:
+                  type: integer
+                  minimum: 1
+      responses:
+        "200":
+          description: Updated
+    delete:
+      tags:
+        - Warehouse Products
+      summary: Detach product from warehouse
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: warehouse
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: product
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detached
+
+  /merchants/{merchant}/products:
+    post:
+      tags:
+        - Merchant Products
+      summary: Assign product to merchant
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: merchant
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product_id
+                - warehouse_id
+                - stock
+              properties:
+                product_id:
+                  type: integer
+                warehouse_id:
+                  type: integer
+                stock:
+                  type: integer
+                  minimum: 1
+      responses:
+        "201":
+          description: Assigned
+
+  /merchants/{merchant}/products/{product}:
+    put:
+      tags:
+        - Merchant Products
+      summary: Update merchant product stock
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: merchant
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: product
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - warehouse_id
+                - stock
+              properties:
+                warehouse_id:
+                  type: integer
+                stock:
+                  type: integer
+                  minimum: 0
+      responses:
+        "200":
+          description: Updated
+    delete:
+      tags:
+        - Merchant Products
+      summary: Remove product from merchant
+      description: "Role: manager"
+      parameters:
+        - in: path
+          name: merchant
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: product
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detached
+
+  /transactions:
+    get:
+      tags:
+        - Transactions
+      summary: List all transactions
+      description: "Role: manager"
+      responses:
+        "200":
+          description: OK
+    post:
+      tags:
+        - Transactions
+      summary: Create a transaction
+      description: "Role: manager|keeper"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - phone
+                - merchant_id
+                - products
+              properties:
+                name:
+                  type: string
+                phone:
+                  type: string
+                merchant_id:
+                  type: integer
+                products:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required:
+                      - product_id
+                      - quantity
+                    properties:
+                      product_id:
+                        type: integer
+                      quantity:
+                        type: integer
+                        minimum: 1
+      responses:
+        "201":
+          description: Recorded successfully
+
+  /transactions/{transaction}:
+    get:
+      tags:
+        - Transactions
+      summary: Get transaction details
+      description: "Role: manager|keeper"
+      parameters:
+        - in: path
+          name: transaction
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Transaction detail
+        "404":
+          description: Not found
