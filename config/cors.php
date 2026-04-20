@@ -19,7 +19,10 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:5174', 'http://localhost:5173', 'https://inventario.portodev.web.id', 'https://inventario-dev.netlify.app'], // domain.com, namakalian.com
+    'allowed_origins' => array_values(array_filter(array_map('trim', explode(',', env(
+        'CORS_ALLOWED_ORIGINS',
+        'http://localhost:5173,http://localhost:5174,https://inventario.portodev.web.id,https://inventario-dev.netlify.app'
+    ))))),
 
     'allowed_origins_patterns' => [],
 
