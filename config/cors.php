@@ -15,20 +15,20 @@ return [
     |
     */
 
-    'paths'                    => ['api', 'api/*', 'sanctum/csrf-cookie'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods'          => ['*'],
+    'allowed_methods' => ['*'],
 
-    'allowed_origins'          => array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173'))),
+    'allowed_origins' => ['http://localhost:5174', 'http://localhost:5173', 'https://inventario.portodev.web.id', 'https://inventario-dev.netlify.app'], // domain.com, namakalian.com
 
     'allowed_origins_patterns' => [],
 
-    'allowed_headers'          => ['*'],
+    'allowed_headers' => ['*'],
 
-    'exposed_headers'          => [],
+    'exposed_headers' => [],
 
-    'max_age'                  => 0,
+    'max_age' => 0,
 
-    'supports_credentials'     => false,
+    'supports_credentials' => true,
 
 ];
